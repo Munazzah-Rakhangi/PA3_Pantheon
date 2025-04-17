@@ -745,8 +745,8 @@ class Test(object):
 
 def run_tests(args):
     # check and get git summary
-    git_summary = utils.get_git_summary(args.mode,
-                                        getattr(args, 'remote_path', None))
+    #git_summary = utils.get_git_summary(args.mode,
+     #                                   getattr(args, 'remote_path', None))
 
     # get cc_schemes
     if args.all:
@@ -769,7 +769,7 @@ def run_tests(args):
     # save metadata
     meta = vars(args).copy()
     meta['cc_schemes'] = sorted(cc_schemes)
-    meta['git_summary'] = git_summary
+    #meta['git_summary'] = git_summary
 
     metadata_path = path.join(args.data_dir, 'pantheon_metadata.json')
     utils.save_test_metadata(meta, metadata_path)

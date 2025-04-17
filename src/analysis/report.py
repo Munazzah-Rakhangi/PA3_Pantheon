@@ -107,7 +107,7 @@ class Report(object):
             '\\begin{verbatim}\n'
             'Git summary:\n'
             '%s'
-            '\\end{verbatim}\n\n' % meta['git_summary'])
+            '\\end{verbatim}\n\n' % meta.get('git_summary', 'N/A'))
         desc += '\\newpage\n\n'
 
         return desc

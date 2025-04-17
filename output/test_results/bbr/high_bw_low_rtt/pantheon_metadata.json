@@ -1,0 +1,16 @@
+{
+    "cc_schemes": [
+        "bbr"
+    ],
+    "downlink_trace": "50mbps.trace",
+    "extra_mm_link_args": "--uplink-queue=droptail --downlink-queue=droptail --uplink-queue-args=packets=500 --downlink-queue-args=packets=500",
+    "flows": 1,
+    "interval": 0,
+    "mode": "local",
+    "prepend_mm_cmds": "mm-delay 10",
+    "random_order": false,
+    "run_times": 1,
+    "runtime": 60,
+    "start_run_id": 1,
+    "uplink_trace": "50mbps.trace"
+}

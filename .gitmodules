@@ -28,11 +28,11 @@
 	ignore = dirty
 [submodule "third_party/genericCC"]
 	path = third_party/genericCC
-	url = https://github.com/venkatarun95/genericCC
+	url = https://github.com/StanfordSNR/genericCC.git
 	ignore = dirty
 [submodule "third_party/fillp"]
 	path = third_party/fillp
-	url = https://github.com/fillthepipe/fill-the-pipe.git
+	url = https://github.com/alibaba/fillp.git
 	ignore = dirty
 [submodule "third_party/vivace"]
 	path = third_party/vivace
@@ -52,5 +52,8 @@
 	ignore = dirty
 [submodule "third_party/fillp-sheep"]
 	path = third_party/fillp-sheep
-	url = https://github.com/fillthepipe/fillp-sheep.git
+	url = https://github.com/alibaba/fillp-sheep.git
 	ignore = dirty
+[submodule "mahimahi"]
+	path = mahimahi
+	url = https://github.com/ravinet/mahimahi.git

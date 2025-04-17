@@ -1,0 +1,7 @@
+Scheme,Scenario,Throughput (Mbps),Delay (ms),Loss Rate
+bbr,low_bw_high_rtt,0.363,5652.98,0.21265
+bbr,high_bw_low_rtt,0.397,1497.655,0.21892
+cubic,low_bw_high_rtt,0.51,9006.065,0.19918
+cubic,high_bw_low_rtt,0.355,1499.921,0.09951
+vegas,low_bw_high_rtt,0.254,1598.029,0.02106
+vegas,high_bw_low_rtt,0.238,1508.249,0.00344
