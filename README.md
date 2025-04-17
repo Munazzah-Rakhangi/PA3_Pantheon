@@ -1,167 +1,258 @@
-# Pantheon of Congestion Control
-The Pantheon contains wrappers for many popular practical and research
-congestion control schemes. The Pantheon enables them to run on a common
-interface, and has tools to benchmark and compare their performances.
-Pantheon tests can be run locally over emulated links using
-[mahimahi](http://mahimahi.mit.edu/) or over the Internet to a remote machine.
+ Programming Assignment 3 - PANTHEON and MAHI MAHI
+------------------------------------------------------------------
+This repository contains a customized and fully configured version of Pantheon, 
+a benchmarking framework for evaluating congestion control (CC) algorithms such 
+as BBR, Cubic, and Vegas. The framework uses Mahimahi to emulate realistic 
+network conditions and captures performance metrics including throughput, 
+latency, and packet loss.
 
-Our website is <https://pantheon.stanford.edu>, where you can find more
-information about Pantheon, including supported schemes, measurement results
-on a global testbed so far, and our paper at [USENIX ATC 2018](https://www.usenix.org/conference/atc18/presentation/yan-francis)
-(**Awarded Best Paper**).
-In case you are interested, the scripts and traces
-(including "calibrated emulators") for running the testbed can be found in
-[observatory](https://github.com/StanfordSNR/observatory).
+Setup Environment
+-----------------
+- OS: Ubuntu 22.04.5 LTS (in UTM on macOS, if virtualized)
+- Python: 2.7
+- Dependencies: matplotlib, PyYAML, numpy, Mahimahi, iperf3
 
-To discuss and talk about Pantheon-related topics and issues, feel free to
-post in the [Google Group](https://groups.google.com/forum/#!forum/pantheon-stanford)
-or send an email to `pantheon-stanford <at> googlegroups <dot> com`.
+Project Folder Structure
+------------------------
+- `src/`: Pantheon source code
+- `tools/`: Support scripts
+- `output/test_results/`: Stores logs and graphs for each CC scheme under test
+- `output/data_analysis/`: Contains scripts for plotting and CSV extraction
+- `traces/`: Network trace files (e.g., 1mbps.trace, 50mbps.trace)
 
-## Disclaimer
-This is research software. Our scripts will write to the file system in the
-`pantheon` folder. We never run third party programs as root, but we cannot
-guarantee they will never try to escalate privilege to root.
+Update Your System
+------------------
+sudo apt update && sudo apt upgrade -y
 
-You might want to install dependencies and run the setup on your own, because
-our handy scripts will install packages and perform some system-wide settings
-(e.g., enabling IP forwarding, loading kernel modeuls) as root.
-Please run at your own risk.
+Install Core Dependencies
+-------------------------
+sudo apt install -y git python2 curl g++ cmake \
+    pkg-config iproute2 iputils-ping \
+    libssl-dev libpcap-dev python-is-python2 \
+    python-pip python-setuptools python-wheel \
+    libboost-all-dev autoconf automake \
+    libprotobuf-dev protobuf-compiler \
+    libtool linux-tools-common linux-tools-generic \
+    linux-tools-$(uname -r) iperf3
 
-## Preparation
-To clone this repository, run:
+Install Python 2 Manually
+-------------------------
+sudo apt install -y python2  
+sudo ln -sf /usr/bin/python2 /usr/bin/python
 
-```
-git clone https://github.com/StanfordSNR/pantheon.git
-```
+Install pip for Python 2
+------------------------
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py  
+sudo python get-pip.py  
 
-Many of the tools and programs run by the Pantheon are git submodules in the
-`third_party` folder. To add submodules after cloning, run:
+Check pip:
+pip --version
 
-```
-git submodule update --init --recursive  # or tools/fetch_submodules.sh
-```
+Install setuptools and wheel
+----------------------------
+sudo pip install setuptools wheel
 
-## Dependencies
-We provide a handy script `tools/install_deps.sh` to install globally required
-dependencies; these dependencies are required before testing **any** scheme
-and are different from the flag `--install-deps` below.
-In particular, we created the [Pantheon-tunnel](https://github.com/StanfordSNR/pantheon-tunnel)
-that is required to instrument each scheme.
+Re-run Full Install (Skip duplicates)
+-------------------------------------
+sudo apt install -y git curl g++ cmake \
+    pkg-config iproute2 iputils-ping \
+    libssl-dev libpcap-dev \
+    python-pip \
+    libboost-all-dev autoconf automake \
+    libprotobuf-dev protobuf-compiler \
+    libtool linux-tools-common linux-tools-generic \
+    linux-tools-$(uname -r) iperf3
 
-You might want to inspect the contents of
-`install_deps.sh` and install these dependencies by yourself in case you want to
-manage dependencies differently. Please note that Pantheon currently
-**only** supports Python 2.7.
+Clone Pantheon & Initialize Submodules
+--------------------------------------
+git clone https://github.com/StanfordSNR/pantheon.git  
+cd pantheon  
+git submodule update --init --recursive
 
-Next, for those dependencies required by each congestion control scheme `<cc>`,
-run `src/wrappers/<cc>.py deps` to print a dependency list. You could install
-them by yourself, or run
+Install Pantheon Dependencies
+-----------------------------
+./tools/install_deps.sh
 
-```
-src/experiments/setup.py --install-deps (--all | --schemes "<cc1> <cc2> ...")
-```
+Clone the Mahimahi Repo
+-----------------------
+cd ~  
+git clone https://github.com/ravinet/mahimahi.git  
+cd mahimahi  
 
-to install dependencies required by all schemes or a list of schemes separated
-by spaces.
+Test installation:
+which mm-link  
 
-## Setup
-After installing dependencies, run
+Install Apache and required packages:
+sudo apt install apache2  
+sudo apt install libxcb1-dev  
+sudo apt install libxcb-present-dev  
+sudo apt update  
+sudo apt install libpangocairo-1.0-dev  
+sudo apt install libpango1.0-dev libcairo2-dev  
 
-```
-src/experiments/setup.py [--setup] [--all | --schemes "<cc1> <cc2> ..."]
-```
+Remove the broken PPA:
+sudo add-apt-repository --remove ppa:keithw/mahimahi  
+sudo apt update
 
-to set up supported congestion control schemes. `--setup` is required
-to be run only once. In contrast, `src/experiments/setup.py` is
-required to be run on every reboot (without `--setup`).
+Install missing dependencies:
+sudo apt install libpango1.0-dev libcairo2-dev libglib2.0-dev
 
-## Running the Pantheon
-To test schemes in emulated networks locally, run
+Build Mahimahi:
+./configure  
+make -j$(nproc)  
+sudo make install
 
-```
-src/experiments/test.py local (--all | --schemes "<cc1> <cc2> ...")
-```
+Enable IP Forwarding
+--------------------
+sudo sysctl -w net.ipv4.ip_forward=1
 
-To test schemes over the Internet to remote machine, run
+Test mm-delay:
+mm-delay 100 bash -c 'echo "This ran in a 100ms delayed shell"'
 
-```
-src/experiments/test.py remote (--all | --schemes "<cc1> <cc2> ...") HOST:PANTHEON-DIR
-```
+Install YAML module
+-------------------
+sudo apt-get install python-yaml  
+pip2 install 'PyYAML==5.3.1'
 
-Run `src/experiments/test.py local -h` and `src/experiments/test.py remote -h`
-for detailed usage and additional optional arguments, such as multiple flows,
-running time, arbitrary set of mahimahi shells for emulation tests,
-data sender side for real tests; use `--data-dir DIR` to specify an
-an output directory to save logs.
+Install iperf and confirm BBR:
+------------------------------
+sudo apt-get install iperf3  
+sudo apt-get install iperf  
+iperf --version
 
-## Pantheon analysis
-To analyze test results, run
+Enable CC algorithms:
+sudo sysctl -w net.ipv4.tcp_available_congestion_control="bbr cubic vegas"  
+sysctl net.ipv4.tcp_available_congestion_control  
+sysctl net.ipv4.tcp_congestion_control
 
-```
-src/analysis/analyze.py --data-dir DIR
-```
+Run Minimal Test (Part A)
+-------------------------
+Terminal 1:
+python2 src/experiments/tunnel_manager.py
 
-It will analyze the logs saved by `src/experiments/test.py`, then generate
-performance figures and a full PDF report `pantheon_report.pdf`.
+Terminal 2:
+PYTHONPATH=src python2 src/experiments/test.py local --schemes bbr --data-dir output/test_results/bbr --runtime 60  
+PYTHONPATH=src python2 src/experiments/test.py local --schemes cubic --data-dir output/test_results/cubic --runtime 60  
+PYTHONPATH=src python2 src/experiments/test.py local --schemes vegas --data-dir output/test_results/vegas --runtime 60  
 
-## Running a single congestion control scheme
-All the available schemes can be found in `src/config.yml`. To run a single
-congestion control scheme, first follow the **Dependencies** section to install
-the required dependencies.
+Permission Fix (If needed):
+sudo sysctl -w net.ipv4.tcp_allowed_congestion_control="vegas cubic reno"  
+sudo modprobe tcp_vegas  
+sysctl net.ipv4.tcp_available_congestion_control
 
-At the first time of running, run `src/wrappers/<cc>.py setup`
-to perform the persistent setup across reboots, such as compilation,
-generating or downloading files to send, etc. Then run
-`src/wrappers/<cc>.py setup_after_reboot`, which also has to be run on every
-reboot. In fact, `test/setup.py` performs `setup_after_reboot` by
-default, and runs `setup` on schemes when `--setup` is given.
+Analyze Each Scheme
+-------------------
+sudo apt-get install python2 python2-dev  
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py  
+sudo python2 get-pip.py  
+sudo pip2 install numpy  
+sudo apt-get install build-essential gfortran libopenblas-dev liblapack-dev  
+sudo pip2 install numpy  
+sudo pip2 install matplotlib  
+sudo apt install texlive-latex-extra
 
-Next, execute the following command to find the running order for a scheme:
-```
-src/wrappers/<cc>.py run_first
-```
+Run Analysis:
+PYTHONPATH=src python2 src/analysis/analyze.py --data-dir output/test_results/bbr  
+PYTHONPATH=src python2 src/analysis/analyze.py --data-dir output/test_results/cubic  
+PYTHONPATH=src python2 src/analysis/analyze.py --data-dir output/test_results/vegas
 
-Depending on the output of `run_first`, run
+Part B: Network Profiles
+------------------------
 
-```
-# Receiver first
-src/wrappers/<cc>.py receiver port
-src/wrappers/<cc>.py sender IP port
-```
+Create Traces:
+mkdir -p traces  
+python2 -c "import sys; [sys.stdout.write('1500\n') for _ in range(4167)]" > traces/50mbps.trace  
+python2 -c "import sys; [sys.stdout.write('1500\n') for _ in range(83)]" > traces/1mbps.trace  
 
-or
+Low-Latency, High-Bandwidth (10ms Delay, 50 Mbps):
+--------------------------------------------------
+BBR:
+python2 src/experiments/test.py local --schemes "bbr" \
+--uplink-trace traces/50mbps.trace \
+--downlink-trace traces/50mbps.trace \
+--prepend-mm-cmds "mm-delay 10" \
+--data-dir output/test_results/bbr/high_bw_low_rtt  
 
-```
-# Sender first
-src/wrappers/<cc>.py sender port
-src/wrappers/<cc>.py receiver IP port
-```
+CUBIC:
+python2 src/experiments/test.py local --schemes "cubic" \
+--uplink-trace traces/50mbps.trace \
+--downlink-trace traces/50mbps.trace \
+--prepend-mm-cmds "mm-delay 10" \
+--data-dir output/test_results/cubic/high_bw_low_rtt  
 
-Run `src/wrappers/<cc>.py -h` for detailed usage.
+VEGAS:
+python2 src/experiments/test.py local --schemes "vegas" \
+--uplink-trace traces/50mbps.trace \
+--downlink-trace traces/50mbps.trace \
+--prepend-mm-cmds "mm-delay 10" \
+--data-dir output/test_results/vegas/high_bw_low_rtt  
 
-## How to add your own congestion control
-Adding your own congestion control to Pantheon is easy! Just follow these
-steps:
+High-Latency, Low-Bandwidth (100ms Delay, 1 Mbps):
+--------------------------------------------------
+BBR:
+python2 src/experiments/test.py local --schemes "bbr" \
+--uplink-trace traces/1mbps.trace \
+--downlink-trace traces/1mbps.trace \
+--prepend-mm-cmds "mm-delay 100" \
+--data-dir output/test_results/bbr/low_bw_high_rtt  
 
-1. Fork this repository.
+CUBIC:
+python2 src/experiments/test.py local --schemes "cubic" \
+--uplink-trace traces/1mbps.trace \
+--downlink-trace traces/1mbps.trace \
+--prepend-mm-cmds "mm-delay 100" \
+--data-dir output/test_results/cubic/low_bw_high_rtt  
 
-2. Add your congestion control repository as a submodule to `pantheon`:
+VEGAS:
+python2 src/experiments/test.py local --schemes "vegas" \
+--uplink-trace traces/1mbps.trace \
+--downlink-trace traces/1mbps.trace \
+--prepend-mm-cmds "mm-delay 100" \
+--data-dir output/test_results/vegas/low_bw_high_rtt  
 
-   ```
-   git submodule add <your-cc-repo-url> third_party/<your-cc-repo-name>
-   ```
+Run Duration Verification
+-------------------------
+All tests run for at least 60 seconds by default (see src/wrappers/ files)
 
-   and add `ignore = dirty` to `.gitmodules` under your submodule.
+Part C: Metric Collection and Analysis
+======================================
 
-3. In `src/wrappers`, read `example.py` and create your own `<your-cc-name>.py`.
-   Make sure the sender and receiver run longer than 60 seconds; you could also
-   leave them running forever without the need to kill them.
+Extract Metrics to CSV
+-----------------------
+cd output/data_analysis  
+python2 generate_csv.py
 
-4. Add your scheme to `src/config.yml` along with settings of
-   `name`, `color` and `marker`, so that `src/experiments/test.py` is able to
-   find your scheme and `src/analysis/analyze.py` is able to plot your scheme
-   with the specified settings.
+Output:
+log_data.csv will be created in the same folder
 
-5. Add your scheme to `SCHEMES` in `.travis.yml` for continuous integration testing.
+Generate Throughput Plots
+--------------------------
+python2 plot_throughput_timeseries.py
 
-6. Send us a pull request and that's it, you're in the Pantheon!
+Output:
+* throughput_timeseries_low_bw_high_rtt.png  
+* throughput_timeseries_high_bw_low_rtt.png
+
+Generate Loss Plots
+-------------------
+python2 plot_loss_timeseries.py
+
+Output:
+* loss_timeseries_low_bw_high_rtt.png  
+* loss_timeseries_high_bw_low_rtt.png
+
+Generate RTT Comparison Plots
+-----------------------------
+python2 plot_rtt_comparison.py
+
+Output:
+* rtt_comparison_low_bw_high_rtt.png  
+* rtt_comparison_high_bw_low_rtt.png
+
+Generate Summary Plot (RTT vs Throughput)
+-----------------------------------------
+python2 plot_summary_rtt_vs_throughput.py
+
+Output:
+* summary_rtt_vs_throughput.png
+
